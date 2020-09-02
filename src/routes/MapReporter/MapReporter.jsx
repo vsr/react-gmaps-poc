@@ -8,8 +8,26 @@ import SearchBox from "./SearchBox";
 import LocationModal from "./LocationModal";
 import { useEffect } from "react";
 
+const useBoundsChanged = (map) => {
+  const [bounds, setBounds] = useState(null);
+
+  const onBoundsChanged = debounce(() => {
+    const bounds = map.getBounds();
+    setBounds(bounds);
+  }, 1000);
+  useEffect(() => {
+    if (map) {
+      const listener = map.addListener("bounds_changed", onBoundsChanged);
+      return () => {
+        window.google.maps.event.removeListener(listener);
+      };
+    }
+  });
+
+  return bounds;
+};
+
 export default () => {
-  console.log("mapreporter");
   const map_api_url = `https://maps.googleapis.com/maps/api/js?key=${window.GOOGLE_MAP_API_KEY}`;
   const [loaded, error] = useScript(map_api_url);
   const mapLibLoaded = loaded && !error;
@@ -20,6 +38,7 @@ export default () => {
 
   const mapRef = useCallback(
     (node) => {
+      console.log("useCallback", node, map);
       if (node && !map) {
         var uluru = { lat: -25.344, lng: 131.036 };
         console.log("initializing map");
@@ -34,19 +53,21 @@ export default () => {
     [map]
   );
 
-  useEffect(() => {
-    if (map) {
-      map.addListener(
-        "bounds_changed",
-        debounce(() => {
-          const bounds = map.getBounds();
-          console.log("showModal", showModal);
-          setShowModal(!showModal);
-          console.log(bounds.toJSON());
-        }, 1000)
-      );
-    }
-  }, [map, showModal]);
+  const bounds = useBoundsChanged(map);
+  console.log("bounds", bounds);
+  // useEffect(() => {
+  //   if (map) {
+  //     map.addListener(
+  //       "bounds_changed",
+  //       debounce(() => {
+  //         const bounds = map.getBounds();
+  //         console.log("showModal", showModal);
+  //         setShowModal(!showModal);
+  //         console.log(bounds.toJSON());
+  //       }, 1000)
+  //     );
+  //   }
+  // }, [map, showModal]);
 
   // setShowModal(!showModal);
   // useEffect(() => {
